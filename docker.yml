@@ -1,0 +1,85 @@
+version: '3.3'
+
+#
+# The Firefly III Data Importer will ask you for the Firefly III URL and a "Client ID".
+# You can generate the Client ID at http://localhost/profile (after registering)
+# The Firefly III URL is: http://app:8080
+#
+# Other URL's will give 500 | Server Error
+#
+
+services:
+  proxy:
+    image: nginx:latest
+    container_name: proxy
+    networks:
+      - default
+    restart: always
+    volumes:
+      - ./proxy:/etc/nginx/conf.d
+    ports:
+      - 8443:8443
+      - 8444:8444
+    depends_on:
+      - app
+      - importer
+
+  app:
+    image: fireflyiii/core:latest
+    container_name: core
+    networks:
+      - default
+    restart: always
+    volumes:
+      - upload:/var/www/html/storage/upload
+    env_file:
+      - .core.env
+      - .core.private.env
+    depends_on:
+      - db
+
+  db:
+    image: mariadb
+    container_name: db
+    networks:
+      - default
+    restart: always
+    env_file:
+      - .db.env
+      - .db.private.env
+    volumes:
+      - db:/var/lib/mysql
+
+  importer:
+    image: fireflyiii/data-importer:latest
+    container_name: importer
+    networks:
+      - default
+    restart: always
+    volumes:
+      - ./proxy/cert.pem:/etc/ssl/certs/firefly_root_ca.pem
+    env_file:
+      - .importer.env
+      - .importer.private.env
+    depends_on:
+      - app
+
+  cron:
+    #
+    # To make this work, set STATIC_CRON_TOKEN in your .env file or as an environment variable and replace REPLACEME below
+    # The STATIC_CRON_TOKEN must be *exactly* 32 characters long
+    #
+    image: alpine
+    container_name: cron
+    restart: always
+    command: sh -c "echo \"0 3 * * * wget -qO- http://app:8080/api/v1/cron/Ofn9GAu9ifzsn5EgmbLQZEtiucNkvQXPGRckq2umJnA=\" | crontab - && crond -f -L /dev/stdout"
+    networks:
+      - default
+
+volumes:
+   upload:
+   db:
+
+networks:
+  default:
+    driver: bridge
