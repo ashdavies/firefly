@@ -1,2 +1,24 @@
-*.private.env
+# General
+.DS_Store
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+
+# Distribution / packaging
+.Python
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# PyCharm
+.idea/
+
+# User files
+*.csv
+*.pdf
 *.pem
+*.private.env
