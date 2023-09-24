@@ -86,7 +86,7 @@ def snap(component: LTComponent, grid_size: int) -> LTComponent:
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--input-file")
-parser.add_argument("--amount-heading", default="Betrag (EUR)")
+parser.add_argument("--amount-heading", default="Betrag")
 parser.add_argument("--grid-size", default=1)
 parser.add_argument("--max-width", default=65)
 args = parser.parse_args()
@@ -108,7 +108,7 @@ for page in pdfminer.high_level.extract_pages(args.input_file):
 
     # Detect one of the headers matching the specified text
     try:
-        amount_heading = next(it for it in containers if contains_exactly(it, args.amount_heading))
+        amount_heading = next(it for it in containers if args.amount_heading in it.get_text())
     except StopIteration:
         print(f"Amount heading '{args.amount_heading}' not found in page")
         continue
@@ -124,6 +124,11 @@ for page in pdfminer.high_level.extract_pages(args.input_file):
 
     # Sort items by horizontal and vertical position
     containers = sorted(containers, key=lambda it: (it.bbox[0], -it.bbox[1]))
+
+    for container in containers:
+        dump(container)
+
+    quit()
 
     # Group elements by x position with a maximum size of the amount of headers
     containers = group_by(containers, lambda it: it.bbox[0], len(headers))
